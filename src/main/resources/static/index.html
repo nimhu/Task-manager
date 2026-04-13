@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <title>Task Manager</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; }
+        h1 { color: #333; }
+        input, textarea { width: 100%; padding: 8px; margin: 5px 0 15px; box-sizing: border-box; }
+        button { background: #4CAF50; color: white; padding: 10px 20px; border: none; cursor: pointer; border-radius: 4px; }
+        button:hover { background: #45a049; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background: #4CAF50; color: white; }
+        .TODO { color: gray; }
+        .IN_PROGRESS { color: orange; }
+        .DONE { color: green; }
+        .delete-btn { background: red; padding: 5px 10px; }
+    </style>
+</head>
+<body>
+<h1>🗂️ Task Manager</h1>
+
+<h2>Adaugă Task Nou</h2>
+<input type="text" id="title" placeholder="Titlu task" />
+<textarea id="description" rows="3" placeholder="Descriere task"></textarea>
+<button onclick="addTask()">➕ Adaugă cu AI</button>
+
+<h2>Taskurile Mele</h2>
+<table>
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>Titlu</th>
+        <th>Descriere</th>
+        <th>Status</th>
+        <th>Acțiuni</th>
+    </tr>
+    </thead>
+    <tbody id="taskList"></tbody>
+</table>
+
+<script>
+    const API = "http://localhost:8080/tasks";
+
+    async function loadTasks() {
+        const res = await fetch(API);
+        const tasks = await res.json();
+        const tbody = document.getElementById("taskList");
+        tbody.innerHTML = "";
+        tasks.forEach(task => {
+            tbody.innerHTML += `
+                <tr>
+                    <td>${task.id}</td>
+                    <td>${task.title}</td>
+                    <td>${task.description}</td>
+                    <td class="${task.status}">${task.status}</td>
+                    <td>
+                        <select onchange="updateStatus(${task.id}, this.value)">
+                            <option ${task.status === 'TODO' ? 'selected' : ''}>TODO</option>
+                            <option ${task.status === 'IN_PROGRESS' ? 'selected' : ''}>IN_PROGRESS</option>
+                            <option ${task.status === 'DONE' ? 'selected' : ''}>DONE</option>
+                        </select>
+                        <button class="delete-btn" onclick="deleteTask(${task.id})">🗑️</button>
+                    </td>
+                </tr>`;
+        });
+    }
+
+    async function addTask() {
+        const title = document.getElementById("title").value;
+        const description = document.getElementById("description").value;
+        if (!title || !description) return alert("Completează titlul și descrierea!");
+
+        await fetch(API + "/ai", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ title, description })
+        });
+
+        document.getElementById("title").value = "";
+        document.getElementById("description").value = "";
+        loadTasks();
+    }
+
+    async function updateStatus(id, status) {
+        await fetch(`${API}/${id}?status=${status}`, { method: "PUT" });
+        loadTasks();
+    }
+
+    async function deleteTask(id) {
+        await fetch(`${API}/${id}`, { method: "DELETE" });
+        loadTasks();
+    }
+
+    loadTasks();
+</script>
+</body>
+</html>
