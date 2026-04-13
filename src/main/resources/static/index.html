@@ -7,44 +7,122 @@
         body { font-family: Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; }
         h1 { color: #333; }
         input, textarea { width: 100%; padding: 8px; margin: 5px 0 15px; box-sizing: border-box; }
-        button { background: #4CAF50; color: white; padding: 10px 20px; border: none; cursor: pointer; border-radius: 4px; }
+        button { background: #4CAF50; color: white; padding: 10px 20px; border: none; cursor: pointer; border-radius: 4px; margin-right: 5px; }
         button:hover { background: #45a049; }
+        .red { background: red; }
+        .red:hover { background: darkred; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
         th { background: #4CAF50; color: white; }
         .TODO { color: gray; }
         .IN_PROGRESS { color: orange; }
         .DONE { color: green; }
-        .delete-btn { background: red; padding: 5px 10px; }
+        #authSection, #appSection { display: none; }
     </style>
 </head>
 <body>
-<h1>🗂️ Task Manager</h1>
 
-<h2>Adaugă Task Nou</h2>
-<input type="text" id="title" placeholder="Titlu task" />
-<textarea id="description" rows="3" placeholder="Descriere task"></textarea>
-<button onclick="addTask()">➕ Adaugă cu AI</button>
+<!-- AUTH SECTION -->
+<div id="authSection">
+    <h1>🔐 Task Manager</h1>
+    <input type="text" id="username" placeholder="Username" />
+    <input type="password" id="password" placeholder="Parola" />
+    <button onclick="login()">Login</button>
+    <button onclick="register()">Register</button>
+    <p id="authMsg" style="color:red;"></p>
+</div>
 
-<h2>Taskurile Mele</h2>
-<table>
-    <thead>
-    <tr>
-        <th>ID</th>
-        <th>Titlu</th>
-        <th>Descriere</th>
-        <th>Status</th>
-        <th>Acțiuni</th>
-    </tr>
-    </thead>
-    <tbody id="taskList"></tbody>
-</table>
+<!-- APP SECTION -->
+<div id="appSection">
+    <h1>🗂️ Task Manager</h1>
+    <button class="red" onclick="logout()" style="float:right">Logout</button>
+    <p>Conectat ca: <strong id="currentUser"></strong></p>
+
+    <h2>Adaugă Task Nou</h2>
+    <input type="text" id="title" placeholder="Titlu task" />
+    <textarea id="description" rows="3" placeholder="Descriere task"></textarea>
+    <button onclick="addTask()">➕ Adaugă cu AI</button>
+
+    <h2>Taskurile Mele</h2>
+    <table>
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Titlu</th>
+            <th>Descriere</th>
+            <th>Status</th>
+            <th>Acțiuni</th>
+        </tr>
+        </thead>
+        <tbody id="taskList"></tbody>
+    </table>
+</div>
 
 <script>
-    const API = "http://localhost:8080/tasks";
+    const API = "http://localhost:8080";
+    let token = localStorage.getItem("token");
+    let username = localStorage.getItem("username");
+
+    function init() {
+        if (token) {
+            showApp();
+        } else {
+            document.getElementById("authSection").style.display = "block";
+        }
+    }
+
+    function showApp() {
+        document.getElementById("authSection").style.display = "none";
+        document.getElementById("appSection").style.display = "block";
+        document.getElementById("currentUser").innerText = username;
+        loadTasks();
+    }
+
+    async function register() {
+        const u = document.getElementById("username").value;
+        const p = document.getElementById("password").value;
+        const res = await fetch(`${API}/auth/register`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username: u, password: p })
+        });
+        const msg = await res.text();
+        document.getElementById("authMsg").innerText = msg;
+    }
+
+    async function login() {
+        const u = document.getElementById("username").value;
+        const p = document.getElementById("password").value;
+        const res = await fetch(`${API}/auth/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username: u, password: p })
+        });
+        if (res.ok) {
+            const data = await res.json();
+            token = data.token;
+            username = u;
+            localStorage.setItem("token", token);
+            localStorage.setItem("username", username);
+            showApp();
+        } else {
+            document.getElementById("authMsg").innerText = "Username sau parola gresite!";
+        }
+    }
+
+    function logout() {
+        localStorage.removeItem("token");
+        localStorage.removeItem("username");
+        token = null;
+        username = null;
+        document.getElementById("appSection").style.display = "none";
+        document.getElementById("authSection").style.display = "block";
+    }
 
     async function loadTasks() {
-        const res = await fetch(API);
+        const res = await fetch(`${API}/tasks`, {
+            headers: { "Authorization": "Bearer " + token }
+        });
         const tasks = await res.json();
         const tbody = document.getElementById("taskList");
         tbody.innerHTML = "";
@@ -61,7 +139,7 @@
                             <option ${task.status === 'IN_PROGRESS' ? 'selected' : ''}>IN_PROGRESS</option>
                             <option ${task.status === 'DONE' ? 'selected' : ''}>DONE</option>
                         </select>
-                        <button class="delete-btn" onclick="deleteTask(${task.id})">🗑️</button>
+                        <button class="red" onclick="deleteTask(${task.id})">🗑️</button>
                     </td>
                 </tr>`;
         });
@@ -71,29 +149,36 @@
         const title = document.getElementById("title").value;
         const description = document.getElementById("description").value;
         if (!title || !description) return alert("Completează titlul și descrierea!");
-
-        await fetch(API + "/ai", {
+        await fetch(`${API}/tasks/ai`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + token
+            },
             body: JSON.stringify({ title, description })
         });
-
         document.getElementById("title").value = "";
         document.getElementById("description").value = "";
         loadTasks();
     }
 
     async function updateStatus(id, status) {
-        await fetch(`${API}/${id}?status=${status}`, { method: "PUT" });
+        await fetch(`${API}/tasks/${id}?status=${status}`, {
+            method: "PUT",
+            headers: { "Authorization": "Bearer " + token }
+        });
         loadTasks();
     }
 
     async function deleteTask(id) {
-        await fetch(`${API}/${id}`, { method: "DELETE" });
+        await fetch(`${API}/tasks/${id}`, {
+            method: "DELETE",
+            headers: { "Authorization": "Bearer " + token }
+        });
         loadTasks();
     }
 
-    loadTasks();
+    init();
 </script>
 </body>
 </html>

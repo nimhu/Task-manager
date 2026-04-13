@@ -13,6 +13,7 @@ import jakarta.validation.constraints.Pattern;
         @NotBlank(message = "Titlul este obligatoriu")
         private String title;
         private String description;
+        private String username;
 
         @NotBlank(message = "Status-ul este obligatoriu")
         @Pattern(regexp = "TODO|IN_PROGRESS|DONE", message = "Status invalid")
@@ -32,6 +33,10 @@ import jakarta.validation.constraints.Pattern;
             return description;
         }
 
+        public String getUsername(){
+            return username;
+        }
+
         public String getStatus() {
             return status;
         }
@@ -46,6 +51,10 @@ import jakarta.validation.constraints.Pattern;
 
         public void setDescription(String description) {
             this.description = description;
+        }
+
+        public void setUsername(String username){
+            this.username = username;
         }
 
         public void setStatus(String status) {
