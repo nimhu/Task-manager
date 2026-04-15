@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/tasks")
@@ -59,5 +60,25 @@ public class TaskController {
     @GetMapping("/filter")
     public List<Task> getByStatus(@RequestParam String status, Authentication auth) {
         return repo.findByUsernameAndStatus(auth.getName(), status);
+    }
+
+    @PostMapping("/chat")
+    public Map<String, String> chat(@RequestBody Map<String, String> request, Authentication auth) {
+        String message = request.get("message");
+        List<Task> tasks = repo.findByUsername(auth.getName());
+        String response = aiService.chat(message, tasks);
+        return Map.of("response", response);
+    }
+
+    @PostMapping("/chat/update")
+    public Map<String, String> chatUpdate(@RequestBody Map<String, String> request, Authentication auth) {
+        Long id = Long.parseLong(request.get("id"));
+        String status = request.get("status");
+        Task task = repo.findById(id).orElseThrow();
+        if (task.getUsername().equals(auth.getName())) {
+            task.setStatus(status);
+            repo.save(task);
+        }
+        return Map.of("result", "ok");
     }
 }

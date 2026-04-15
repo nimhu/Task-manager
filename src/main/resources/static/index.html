@@ -2,64 +2,202 @@
 <html lang="ro">
 <head>
     <meta charset="UTF-8">
-    <title>Task Manager</title>
+    <title>Task Manager AI</title>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; }
-        h1 { color: #333; }
-        input, textarea { width: 100%; padding: 8px; margin: 5px 0 15px; box-sizing: border-box; }
-        button { background: #4CAF50; color: white; padding: 10px 20px; border: none; cursor: pointer; border-radius: 4px; margin-right: 5px; }
-        button:hover { background: #45a049; }
-        .red { background: red; }
-        .red:hover { background: darkred; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-        th { background: #4CAF50; color: white; }
-        .TODO { color: gray; }
-        .IN_PROGRESS { color: orange; }
-        .DONE { color: green; }
-        #authSection, #appSection { display: none; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; min-height: 100vh; }
+
+        /* AUTH */
+        #authSection {
+            display: none;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .auth-card {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 400px;
+        }
+        .auth-card h1 { text-align: center; color: #4CAF50; margin-bottom: 8px; }
+        .auth-card p { text-align: center; color: #888; margin-bottom: 24px; }
+        .auth-card input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+        .auth-buttons { display: flex; gap: 10px; }
+        .btn { padding: 12px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; transition: 0.2s; }
+        .btn-primary { background: #4CAF50; color: white; flex: 1; }
+        .btn-primary:hover { background: #43a047; }
+        .btn-secondary { background: #f0f2f5; color: #333; flex: 1; }
+        .btn-secondary:hover { background: #e0e0e0; }
+        .btn-danger { background: #f44336; color: white; }
+        .btn-danger:hover { background: #e53935; }
+        #authMsg { color: #f44336; text-align: center; margin-top: 12px; font-size: 13px; }
+
+        /* APP */
+        #appSection { display: none; }
+        .navbar {
+            background: white;
+            padding: 16px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .navbar h1 { color: #4CAF50; font-size: 22px; }
+        .navbar span { color: #888; font-size: 14px; }
+        .container { max-width: 900px; margin: 32px auto; padding: 0 20px; }
+
+        /* CARDS */
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        }
+        .card h2 { color: #333; margin-bottom: 16px; font-size: 18px; }
+        .card input, .card textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+        .card textarea { resize: vertical; }
+
+        /* CHAT */
+        #chatHistory {
+            height: 220px;
+            overflow-y: auto;
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+        #chatHistory p { margin-bottom: 8px; font-size: 14px; line-height: 1.5; }
+        #chatHistory .user-msg { color: #1976D2; }
+        #chatHistory .ai-msg { color: #388E3C; }
+        .chat-input-row { display: flex; gap: 10px; }
+        .chat-input-row input { flex: 1; margin: 0; }
+
+        /* TABLE */
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #4CAF50; color: white; padding: 12px 16px; text-align: left; font-weight: 600; }
+        th:first-child { border-radius: 8px 0 0 0; }
+        th:last-child { border-radius: 0 8px 0 0; }
+        td { padding: 12px 16px; border-bottom: 1px solid #f0f0f0; font-size: 14px; }
+        tr:hover td { background: #f9f9f9; }
+        .badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .TODO { background: #f0f0f0; color: #888; }
+        .IN_PROGRESS { background: #fff3e0; color: #f57c00; }
+        .DONE { background: #e8f5e9; color: #388E3C; }
+        select {
+            padding: 6px 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        .btn-icon {
+            background: #ffebee;
+            color: #f44336;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-left: 6px;
+        }
+        .btn-icon:hover { background: #ffcdd2; }
     </style>
 </head>
 <body>
 
-<!-- AUTH SECTION -->
+<!-- AUTH -->
 <div id="authSection">
-    <h1>🔐 Task Manager</h1>
-    <input type="text" id="username" placeholder="Username" />
-    <input type="password" id="password" placeholder="Parola" />
-    <button onclick="login()">Login</button>
-    <button onclick="register()">Register</button>
-    <p id="authMsg" style="color:red;"></p>
+    <div class="auth-card">
+        <h1>✅ Task Manager</h1>
+        <p>Organizează-ți taskurile cu ajutorul AI</p>
+        <input type="text" id="username" placeholder="Username" />
+        <input type="password" id="password" placeholder="Parolă" />
+        <div class="auth-buttons">
+            <button class="btn btn-primary" onclick="login()">Login</button>
+            <button class="btn btn-secondary" onclick="register()">Register</button>
+        </div>
+        <p id="authMsg"></p>
+    </div>
 </div>
 
-<!-- APP SECTION -->
+<!-- APP -->
 <div id="appSection">
-    <h1>🗂️ Task Manager</h1>
-    <button class="red" onclick="logout()" style="float:right">Logout</button>
-    <p>Conectat ca: <strong id="currentUser"></strong></p>
+    <div class="navbar">
+        <h1>✅ Task Manager AI</h1>
+        <div style="display:flex; align-items:center; gap:16px;">
+            <span>👤 <strong id="currentUser"></strong></span>
+            <button class="btn btn-danger" onclick="logout()">Logout</button>
+        </div>
+    </div>
 
-    <h2>Adaugă Task Nou</h2>
-    <input type="text" id="title" placeholder="Titlu task" />
-    <textarea id="description" rows="3" placeholder="Descriere task"></textarea>
-    <button onclick="addTask()">➕ Adaugă cu AI</button>
+    <div class="container">
 
-    <h2>Taskurile Mele</h2>
-    <table>
-        <thead>
-        <tr>
-            <th>ID</th>
-            <th>Titlu</th>
-            <th>Descriere</th>
-            <th>Status</th>
-            <th>Acțiuni</th>
-        </tr>
-        </thead>
-        <tbody id="taskList"></tbody>
-    </table>
+        <!-- Adaugă Task -->
+        <div class="card">
+            <h2>➕ Adaugă Task Nou</h2>
+            <input type="text" id="title" placeholder="Titlu task" />
+            <textarea id="description" rows="3" placeholder="Descriere task — AI va atribui statusul automat"></textarea>
+            <button class="btn btn-primary" onclick="addTask()">Adaugă cu AI ✨</button>
+        </div>
+
+        <!-- Chat AI -->
+        <div class="card">
+            <h2>💬 Chat cu AI</h2>
+            <div id="chatHistory">
+                <p class="ai-msg"><strong>AI:</strong> Salut! Spune-mi ce taskuri ai terminat sau pe care le-ai început. 🚀</p>
+            </div>
+            <div class="chat-input-row">
+                <input type="text" id="chatInput" placeholder="Ex: Am terminat taskul de login..." onkeydown="if(event.key==='Enter') sendChat()" />
+                <button class="btn btn-primary" onclick="sendChat()">Trimite</button>
+            </div>
+        </div>
+
+        <!-- Taskuri -->
+        <div class="card">
+            <h2>📋 Taskurile Mele</h2>
+            <table>
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Titlu</th>
+                    <th>Descriere</th>
+                    <th>Status</th>
+                    <th>Acțiuni</th>
+                </tr>
+                </thead>
+                <tbody id="taskList"></tbody>
+            </table>
+        </div>
+
+    </div>
 </div>
 
 <script>
-    const API = "https://task-manager-production-eef8.up.railway.app";
+    const API = "http://localhost:8080";
     let token = localStorage.getItem("token");
     let username = localStorage.getItem("username");
 
@@ -67,7 +205,7 @@
         if (token) {
             showApp();
         } else {
-            document.getElementById("authSection").style.display = "block";
+            document.getElementById("authSection").style.display = "flex";
         }
     }
 
@@ -106,7 +244,7 @@
             localStorage.setItem("username", username);
             showApp();
         } else {
-            document.getElementById("authMsg").innerText = "Username sau parola gresite!";
+            document.getElementById("authMsg").innerText = "Username sau parolă greșite!";
         }
     }
 
@@ -116,7 +254,7 @@
         token = null;
         username = null;
         document.getElementById("appSection").style.display = "none";
-        document.getElementById("authSection").style.display = "block";
+        document.getElementById("authSection").style.display = "flex";
     }
 
     async function loadTasks() {
@@ -130,16 +268,16 @@
             tbody.innerHTML += `
                 <tr>
                     <td>${task.id}</td>
-                    <td>${task.title}</td>
+                    <td><strong>${task.title}</strong></td>
                     <td>${task.description}</td>
-                    <td class="${task.status}">${task.status}</td>
+                    <td><span class="badge ${task.status}">${task.status}</span></td>
                     <td>
                         <select onchange="updateStatus(${task.id}, this.value)">
                             <option ${task.status === 'TODO' ? 'selected' : ''}>TODO</option>
                             <option ${task.status === 'IN_PROGRESS' ? 'selected' : ''}>IN_PROGRESS</option>
                             <option ${task.status === 'DONE' ? 'selected' : ''}>DONE</option>
                         </select>
-                        <button class="red" onclick="deleteTask(${task.id})">🗑️</button>
+                        <button class="btn-icon" onclick="deleteTask(${task.id})">🗑️</button>
                     </td>
                 </tr>`;
         });
@@ -175,6 +313,48 @@
             method: "DELETE",
             headers: { "Authorization": "Bearer " + token }
         });
+        loadTasks();
+    }
+
+    async function sendChat() {
+        const input = document.getElementById("chatInput");
+        const message = input.value;
+        if (!message) return;
+
+        const chatHistory = document.getElementById("chatHistory");
+        chatHistory.innerHTML += `<p class="user-msg"><strong>Tu:</strong> ${message}</p>`;
+        input.value = "";
+
+        const res = await fetch(`${API}/tasks/chat`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + token
+            },
+            body: JSON.stringify({ message })
+        });
+
+        const data = await res.json();
+        const response = data.response;
+
+        chatHistory.innerHTML += `<p class="ai-msg"><strong>AI:</strong> ${response}</p>`;
+        chatHistory.scrollTop = chatHistory.scrollHeight;
+
+        const regex = /UPDATE_TASK:(\d+):(\w+)/g;
+        let match;
+        while ((match = regex.exec(response)) !== null) {
+            const id = match[1];
+            const status = match[2];
+            await fetch(`${API}/tasks/chat/update`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer " + token
+                },
+                body: JSON.stringify({ id, status })
+            });
+        }
+
         loadTasks();
     }
 

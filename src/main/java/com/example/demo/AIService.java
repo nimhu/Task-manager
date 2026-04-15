@@ -9,37 +9,37 @@ import java.util.Map;
 @Service
 public class AIService {
 
-    private final String API_KEY = "AIzaSyDEpDnwfJhGcXpVwZu-bkR9UIeXcgGZim0";
+    private final String API_KEY = System.getenv("OPENAI_API_KEY");
 
     private final WebClient client = WebClient.builder()
-            .baseUrl("https://generativelanguage.googleapis.com")
+            .baseUrl("https://api.openai.com")
+            .defaultHeader("Authorization", "Bearer " + API_KEY)
             .build();
+
 
     public String suggestStatus(String description) {
         try {
             Map<String, Object> body = Map.of(
-                    "contents", List.of(
-                            Map.of("parts", List.of(
-                                    Map.of("text",
-                                            "Bazat pe aceasta descriere de task: '" + description +
-                                                    "', raspunde DOAR cu unul din aceste cuvinte: TODO, IN_PROGRESS, sau DONE. Nimic altceva.")
-                            ))
+                    "model", "gpt-4o-mini",
+                    "max_tokens", 10,
+                    "messages", List.of(
+                            Map.of("role", "user", "content",
+                                    "Bazat pe aceasta descriere de task: '" + description +
+                                            "', raspunde DOAR cu unul din aceste cuvinte: TODO, IN_PROGRESS, sau DONE. Nimic altceva.")
                     )
             );
 
             var response = client.post()
-                    .uri("/v1beta/models/gemini-2.0-flash:generateContent?key=" + API_KEY)
+                    .uri("/v1/chat/completions")
                     .contentType(MediaType.APPLICATION_JSON)
                     .bodyValue(body)
                     .retrieve()
                     .bodyToMono(Map.class)
                     .block();
 
-            var candidates = (List<Map<String, Object>>) response.get("candidates");
-            var content = (Map<String, Object>) candidates.get(0).get("content");
-            var parts = (List<Map<String, Object>>) content.get("parts");
-
-            String result = parts.get(0).get("text").toString().trim().toUpperCase();
+            var choices = (List<Map<String, Object>>) response.get("choices");
+            var message = (Map<String, Object>) choices.get(0).get("message");
+            String result = message.get("content").toString().trim().toUpperCase();
 
             if (result.contains("DONE")) return "DONE";
             if (result.contains("IN_PROGRESS")) return "IN_PROGRESS";
@@ -54,42 +54,37 @@ public class AIService {
         try {
             StringBuilder taskList = new StringBuilder();
             for (Task t : tasks) {
-                taskList.append("- ID: ").append(t.getId())
-                        .append(", Titlu: ").append(t.getTitle())
-                        .append(", Status: ").append(t.getStatus())
-                        .append("\n");
+                taskList.append(t.getId()).append(":").append(t.getTitle())
+                        .append(":").append(t.getStatus()).append("\n");
             }
 
-            String prompt = "Esti un asistent pentru managementul taskurilor. " +
-                    "Taskurile utilizatorului sunt:\n" + taskList +
-                    "\nMesajul utilizatorului: '" + message + "'\n" +
-                    "Raspunde in romana. Daca utilizatorul a terminat un task, spune-i explicit: " +
-                    "UPDATE_TASK:[id]:[STATUS] (ex: UPDATE_TASK:1:DONE). " +
-                    "Altfel raspunde normal la intrebare.";
+            String prompt = "Taskuri:\n" + taskList +
+                    "\nMesaj: '" + message + "'\n" +
+                    "Raspunde scurt in romana. Daca un task e terminat scrie: UPDATE_TASK:[id]:DONE. " +
+                    "Daca e in progres: UPDATE_TASK:[id]:IN_PROGRESS.";
 
             Map<String, Object> body = Map.of(
-                    "contents", List.of(
-                            Map.of("parts", List.of(
-                                    Map.of("text", prompt)
-                            ))
+                    "model", "gpt-4o-mini",
+                    "max_tokens", 200,
+                    "messages", List.of(
+                            Map.of("role", "user", "content", prompt)
                     )
             );
 
             var response = client.post()
-                    .uri("/v1beta/models/gemini-2.0-flash:generateContent?key=" + API_KEY)
+                    .uri("/v1/chat/completions")
                     .contentType(MediaType.APPLICATION_JSON)
                     .bodyValue(body)
                     .retrieve()
                     .bodyToMono(Map.class)
                     .block();
 
-            var candidates = (List<Map<String, Object>>) response.get("candidates");
-            var content = (Map<String, Object>) candidates.get(0).get("content");
-            var parts = (List<Map<String, Object>>) content.get("parts");
-            return parts.get(0).get("text").toString().trim();
+            var choices = (List<Map<String, Object>>) response.get("choices");
+            var msg = (Map<String, Object>) choices.get(0).get("message");
+            return msg.get("content").toString().trim();
 
         } catch (Exception e) {
-            return "Asistentul AI nu este disponibil momentan. Incearca din nou mai tarziu.";
+            return "Eroare: " + e.getMessage();
         }
     }
 
